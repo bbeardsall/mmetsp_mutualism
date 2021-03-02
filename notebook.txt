@@ -1,0 +1,50 @@
+
+### LINKS ###
+MMETSP project: https://www.imicrobe.us/#/projects/104
+
+
+Guillardia theta CCMP 2712 - MMETSP0046
+MMETSP1006-Emiliania-huxleyi
+
+
+Install kraken2 version 2.1.1 with
+$ conda install kraken2=2.1.1
+
+create environment:
+conda create -n readAssignment kraken2=2.1.1
+
+build library with bacteria, archaea, viral, univec_core, plant, protozoa
+$ kraken2-build --download-library bacteria --db bacArcVirVecPltPro_db
+$ kraken2-build --download-library archaea --db bacArcVirVecPltPro_db
+$ kraken2-build --download-library viral --db bacArcVirVecPltPro_db
+$ kraken2-build --download-library UniVec_Core --db bacArcVirVecPltPro_db
+$ kraken2-build --download-library plant --db bacArcVirVecPltPro_db
+$ kraken2-build --download-library protozoa --db bacArcVirVecPltPro_db
+
+
+Cancelled.
+
+Taxonomy:
+$ kraken2-build --download-taxonomy --db bacArcVirVec_EHux_db
+
+Added kraken taxid (|kraken:taxid|280463) to sequence IDs of E. hux genome fasta
+Script: addKrakenTaxid.ipynb
+
+Add to library
+kraken2-build --add-to-library eHux_krakenTaxid.fasta --db bacArcVirVec_EHux_db
+
+
+Copy existing bacteria, archaea, plasmid, viral, UniVec_Core libraries to new folder (bacArcVirVec_EHux_db).
+/mnt/D2/bbeardsall/krakenFiles/bacArcVirVec_EHux_db/library
+
+Build db with 32 cores.
+kraken2-build --build --threads 32 --db bacArcVirVec_EHux_db
+Started around 11:50 on Feb 26.
+Took 4 h 32 min for 100785 sequences, 92126775557 bp
+
+Classify eHux MMETSP reads.
+$ kraken2 --use-names --threads 32 --db /mnt/D2/bbeardsall/krakenFiles/bacArcVirVec_EHux_db --report eHux_customdb --paired MMETSP1006-Emiliania-huxleyi-374.1.fastq MMETSP1006-Emiliania-huxleyi-374.2.fastq > eHux_customdb.kraken
+start at 5:15
+/mnt/D2/bbeardsall/krakenFiles/bacArcVirVec_EHux_db
+
+
