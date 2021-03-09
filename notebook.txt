@@ -33,7 +33,6 @@ Script: addKrakenTaxid.ipynb
 Add to library
 kraken2-build --add-to-library eHux_krakenTaxid.fasta --db bacArcVirVec_EHux_db
 
-
 Copy existing bacteria, archaea, plasmid, viral, UniVec_Core libraries to new folder (bacArcVirVec_EHux_db).
 /mnt/D2/bbeardsall/krakenFiles/bacArcVirVec_EHux_db/library
 
@@ -48,3 +47,6 @@ start at 5:15
 /mnt/D2/bbeardsall/krakenFiles/bacArcVirVec_EHux_db
 
 
+9. March. 2020
+All genbank genome ftp paths from: https://ftp.ncbi.nih.gov/genomes/genbank/assembly_summary_genbank.txt
+Trying to get ftp paths for all MMETSP species genomes.
