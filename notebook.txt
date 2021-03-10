@@ -50,3 +50,31 @@ start at 5:15
 9. March. 2020
 All genbank genome ftp paths from: https://ftp.ncbi.nih.gov/genomes/genbank/assembly_summary_genbank.txt
 Trying to get ftp paths for all MMETSP species genomes.
+
+Example snakefile from Dr. Irwin:
+https://hackmd.io/SU2NB89JRu6fRPtSFizEEA?view 
+
+Download all available MMETSP genomes.
+wget -i genome_ftp_paths.txt -P ./genomes/
+
+Start jupyter server.
+jupyter lab --no-browser --port=8080
+ssh -N -L 8080:localhost:8080 bbeardsall@bio2.mmab.ca
+
+
+Download taxonomy.
+$ kraken2-build --download-taxonomy --db mmetsp_genome_db
+
+Download databases.
+$ kraken2-build --download-library bacteria --db mmetsp_genome_db
+$ kraken2-build --download-library archaea --db mmetsp_genome_db
+$ kraken2-build --download-library viral --db mmetsp_genome_db
+$ kraken2-build --download-library UniVec_Core --db mmetsp_genome_db
+
+
+
+kraken2-build --download-library UniVec_Core --db bacArcVirVecPltPro_db
+
+
+
+
