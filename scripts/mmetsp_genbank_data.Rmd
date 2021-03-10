@@ -14,6 +14,7 @@ Read raw data.
 mmetsp_raw_data <- read_tsv('../data/sample-attr.tab.txt')
 mmetsp_raw_data
 ```
+
 Unpack attributes.
 ```{r}
 mmetsp_wider <- mmetsp_raw_data %>%
@@ -24,7 +25,7 @@ mmetsp_wider
 ```
 Select and unnest taxon info.
 ```{r}
-mmetsp_taxon <- wider %>%
+mmetsp_taxon <- mmetsp_wider %>%
   select(sample_id, sample_name_main, taxon_id, phylum, class, order, genus, species, strain) %>%
   unnest() %>%
   mutate(
@@ -78,6 +79,8 @@ genbank
 ```
 
 ```{r}
+suffix <- "_genomic.fna.gz"
+
 join_taxid <- inner_join(mmetsp_taxon, genbank, by = c('taxon_id' = 'taxid')) %>%
   distinct(sample_id, .keep_all = TRUE) %>%
   distinct(taxon_id, .keep_all = TRUE) %>%
@@ -90,37 +93,8 @@ join_taxid <- inner_join(mmetsp_taxon, genbank, by = c('taxon_id' = 'taxid')) %>
   
 join_taxid
 ```
-
-
 ```{r}
-join_taxid %>%
-  select(asm_name, ftp_path) %>%
-  mutate(genome_ftp_path = paste(
-    paste(ftp_path, tail(str_split(ftp_path, '/')[[1]], 1), sep = "/"),
-    suffix, sep = "")
-  )
+write_csv(join_taxid, '../data/mmetsp_ncbi_genome_info.csv')
 ```
 
-
-```{r}
-string = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/001/652/855/GCA_001652855.1_Pro_Min_D-127.v1.0'
-tail(str_split(string, '/')[[1]], 1)
-```
-
-```{r}
-ftp_paths <- join_taxid$ftp_path
-```
-```{r}
-suffix <- "_genomic.fna.gz"
-ftp_paths_suffix <- paste(ftp_paths, suffix, sep = "")
-```
-
-
-```{r}
-ftp_paths_suffix[1]
-```
-
-```{r}
-https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/001/652/855/GCA_001652855.1_Pro_Min_D-127.v1.0/GCA_001652855.1_Pro_Min_D-127.v1.0_genomic.fna.gz
-```
 
