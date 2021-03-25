@@ -1,10 +1,17 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Merge MMETSP and Genbank Data"
+output: 
 ---
 
+# Setup
+Load Libraries.
 ```{r}
 library(tidyverse)
+theme_set(theme_bw())
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(taxonomizr)
 ```
 
 # MMETSP
@@ -23,10 +30,69 @@ mmetsp_wider <- mmetsp_raw_data %>%
 
 mmetsp_wider
 ```
+
+Some latitude and longitude entries have multiple coordinates.
+```{r}
+mmetsp_wider %>%
+  mutate(latDup = ifelse(lengths(latitude) > 1, 1 , 0),
+         longDup = ifelse(lengths(longitude) > 1, 1 , 0)) %>%
+  filter(latDup == 1 | longDup == 1)
+```
+
+For duplicate lat/long, keep first latitude, and second longitude. Keep first sample name. For other columns with duplicate entries, paste together (comma separated).
+```{r}
+# keep first latitude, second longitude.
+mmetsp_wider$longitude <- lapply(mmetsp_wider$longitude, function(x) if(length(x) > 1) x[[2]] else x)
+mmetsp_wider$latitude <- lapply(mmetsp_wider$latitude, function(x) if(length(x) > 1) x[[1]] else x)
+
+# keep first sample name
+mmetsp_wider$sample_name <- lapply(mmetsp_wider$sample_name, function(x) if(length(x) > 1) x[[1]] else x)
+
+# paste (comma separated) other duplicate entries.
+mmetsp_wider$source_mat_id <- lapply(mmetsp_wider$source_mat_id, function(x) paste(x, collapse = ","))
+mmetsp_wider$primary_citation <- lapply(mmetsp_wider$primary_citation, function(x) paste(x, collapse = ","))
+mmetsp_wider$other_experimental_metadata_available <- lapply(mmetsp_wider$other_experimental_metadata_available, function(x) paste(x, collapse = ","))
+mmetsp_wider$other_environmental_metadata_available <- lapply(mmetsp_wider$other_environmental_metadata_available, function(x) paste(x, collapse = ","))
+mmetsp_wider$country <- lapply(mmetsp_wider$country, function(x) paste(x, collapse = ","))
+mmetsp_wider$additional_citations <- lapply(mmetsp_wider$additional_citations, function(x) paste(x, collapse = ","))
+```
+
+Check that all list columns are of length one.
+```{r}
+mmetsp_wider %>%
+  summarise(across(everything(), ~ max(lengths(.x)))) %>%
+  t()
+```
+Unnest wide data, now that lists are only of length one.
+```{r}
+mmetsp_unnested <- mmetsp_wider %>%
+  unnest()
+```
+
+# Mapping
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+coords_df <- mmetsp_unnested %>%
+  select(latitude, longitude) %>%
+  mutate_all(as.double) %>%
+  na.omit() 
+```
+
+Map of MMETSP sampling points:
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = coords_df, aes(x = longitude, y = latitude), size = 3, 
+        shape = 23, fill = "red")+
+  coord_sf(xlim = c(-180, 180), ylim = c(-90, 90), expand = FALSE)
+```
+
+
 Select and unnest taxon info.
 ```{r}
 mmetsp_taxon <- mmetsp_wider %>%
-  select(sample_id, sample_name_main, taxon_id, phylum, class, order, genus, species, strain) %>%
+  select(sample_id, sample_name_main, taxon_id, phylum, class, order, genus, species, strain, fastq_file, latitude, longitude) %>%
   unnest() %>%
   mutate(
     genus_species_strain = gsub(" ", "_", paste(genus, species, strain, sep = "_"))
@@ -34,67 +100,86 @@ mmetsp_taxon <- mmetsp_wider %>%
 mmetsp_taxon
 ```
 
+```{r}
+mmetsp_taxon %>%
+  drop_na(latitude)
+```
+
+
 Select only barebones.
 ```{r}
 mmetsp_select <- mmetsp_taxon %>%
-  select('sample_id', 'sample_name_main', 'taxon_id', 'genus_species_strain')
+  select('sample_id', 'sample_name_main', 'taxon_id', 'genus_species_strain', 'fastq_file')
 ```
 
 # Genbank
 
+Specify column names.
 ```{r}
 colNames <- "assembly_accession, bioproject, biosample, wgs_master, refseq_category, taxid, species_taxid, organism_name, infraspecific_name, infraspecific_name2, isolateversion_status, assembly_level, release_type, genome_rep, seq_rel_date, asm_name, submitter, gbrs_paired_asm, paired_asm_comp, ftp_path, excluded_from_refseq, relation_to_type_material"
 colNamesVec <- unlist(str_split(colNames, ", "))
 ```
 
+Read in metadata for all Genbank genomes.
 ```{r}
+# genome filename ending
+suffix <- "_genomic.fna.gz"
+
 genbank <- read_tsv('../data/assembly_summary_genbank.txt',
                     comment = "#",
                     col_names = colNamesVec) %>%
+  # remove entries missing ftp genome path
+  drop_na(ftp_path) %>%
   mutate(taxid = as.character(taxid),
-         species_taxid = as.character(species_taxid))
+         species_taxid = as.character(species_taxid)) %>%
+  rowwise() %>%
+  mutate(
+    # add full filename and ftp path of genbank genomes
+    genome_filename = paste(tail(str_split(ftp_path, '/')[[1]], 1), suffix, sep = ""),
+    genome_ftp_path = paste(ftp_path, genome_filename, sep = "/")
+  )
 ```
 
-```{r}
-genbank_select <- genbank %>%
-  select('taxid', 'species_taxid', 'organism_name', 'genome_rep', 'ftp_path')
+# Join MMETSP/Genbank by taxid
 
-genbank_select
-```
-
-# Join
-
+Join MMETSP and Genbank data by taxon id.
 ```{r}
-mmetsp_taxon
-```
-
-```{r}
-genbank_select <- genbank_select %>%
-  mutate(taxid = as.character(taxid),
-         species_taxid = as.character(species_taxid))
-genbank_select
-```
-```{r}
-genbank
-```
-
-```{r}
+# genome filename ending
 suffix <- "_genomic.fna.gz"
 
-join_taxid <- inner_join(mmetsp_taxon, genbank, by = c('taxon_id' = 'taxid')) %>%
+# join mmetsp & genbank
+join_taxid <- inner_join(mmetsp_unnested, genbank, by = c('taxon_id' = 'taxid')) %>%
+  # remove duplicates
   distinct(sample_id, .keep_all = TRUE) %>%
   distinct(taxon_id, .keep_all = TRUE) %>%
   rowwise() %>%
   mutate(
+    # add full filename and ftp path of genbank genomes
     genome_filename = paste(tail(str_split(ftp_path, '/')[[1]], 1), suffix, sep = ""),
-    
     genome_ftp_path = paste(ftp_path, genome_filename, sep = "/")
   )
   
 join_taxid
 ```
+
+
+
+
+# Write taxid joined 
+CSV of all info:
 ```{r}
 write_csv(join_taxid, '../data/mmetsp_ncbi_genome_info.csv')
 ```
 
+FTP paths:
+```{r}
+readr::write_lines(join_taxid$genome_ftp_path, '../data/genome_ftp_paths.txt')
+```
+
+
+# Filter Genbank by MMETSP class
+Download NCBI taxonomy SQL database (only need to do this once!).
+```{r}
+prepareDatabase('../data/accessionTaxa.sql')
+```
 
