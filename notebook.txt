@@ -71,8 +71,55 @@ Added sequences to database with snakemake script.
 Build database (started 2:33 PM, March 10):
 $   kraken2-build --build --db mmetsp_genome_db --threads 32
 
+457644 sequences, 94267203205 bp
+Database files completed. [4h38m23.583s]
+Database construction complete. [Total: 4h50m33.923s]
 
 
+kraken2 --use-names --threads 32 --db data/mmetsp_genome_db --report 2004 --paired data/MMETSP_fastq/2004/MMETSP0914-Aureococcus-anophagefferens-CCMP1850.1.fastq data/MMETSP_fastq/2004/MMETSP0914-Aureococcus-anophagefferens-CCMP1850.1.fastq > results/2004.kraken
 
 
+kraken2 --use-names --threads 32 --db data/mmetsp_genome_db --report results/2004 --paired data/MMETSP_fastq/2004/MMETSP0914-Aureococcus-anophagefferens-CCMP1850.1.fastq data/MMETSP_fastq/2004/MMETSP0914-Aureococcus-anophagefferens-CCMP1850.1.fastq > results/2004.kraken
 
+
+11. March 2021
+2234: 93.5% target, 0.7% bacteria, 6% unclassified
+Marinobacter = 1600,
+Pseudomonas putida = 21
+
+2004 Aureococcus anophagefferens:
+88.32% target, 0.38% bacteria, 10.8% unclassified
+11742 Streptomyces
+
+2282 
+92.5% Vitrella brassicaformis CCMP3155, 0.07% bacteria, 7.3% unclassified
+447 Halieaceae bacterium IMCC3088
+109 Halioglobus
+432 Oceanospirillales
+
+2502
+96.09% Pycnococcus provasolii, 2.7% unclassified, 0.09% bacteria
+6202 Marinobacter
+4 Glaciecola
+
+From antartica:
+ 93% Euplotes focardii, 6.4% unclassified, 0.08% bacteria
+ Paraglaciecola psychrophila (arctic)
+
+23. March. 2021
+Want to increase size of reference database to include all matching MMETSP and genbank
+at a (class?) level, not just matching species. 
+
+24. March. 2021
+Made a world map showing the locations of all MMETSP samples.
+Issues with MMETSP metadata - multiple latitude/longitudes for same sample.
+For duplicate latitudes, first entry correct. For duplicate longitudes, second entry (>0) correct. Verified by biosample ID.
+Plot on map: https://www.r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
+
+install dependecy for r spatial: sudo apt install libudunits2-dev
+sudo apt install libgdal-dev
+Also install R package "rgeos".
+
+Want to turn genbank taxid into kingdom, phylum, class, etc. to match MMETSP
+Using package taxonomizr.
+Moved taxonomizr intermediate files to data/
