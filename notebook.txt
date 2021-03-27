@@ -123,3 +123,9 @@ Also install R package "rgeos".
 Want to turn genbank taxid into kingdom, phylum, class, etc. to match MMETSP
 Using package taxonomizr.
 Moved taxonomizr intermediate files to data/
+
+27. March 2021
+Try joining genbank genome df with taxonomy df.
+Inner join taking forever ...
+Too slow with tibbles. Try using data.table. Works, but removing duplicate taxids made dplyr joinin
+fast enough.
