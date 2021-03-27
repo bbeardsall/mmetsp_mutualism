@@ -12,6 +12,7 @@ library("sf")
 library("rnaturalearth")
 library("rnaturalearthdata")
 library(taxonomizr)
+library(data.table)
 ```
 
 # MMETSP
@@ -100,11 +101,6 @@ mmetsp_taxon <- mmetsp_wider %>%
 mmetsp_taxon
 ```
 
-```{r}
-mmetsp_taxon %>%
-  drop_na(latitude)
-```
-
 
 Select only barebones.
 ```{r}
@@ -176,10 +172,59 @@ FTP paths:
 readr::write_lines(join_taxid$genome_ftp_path, '../data/genome_ftp_paths.txt')
 ```
 
-
 # Filter Genbank by MMETSP class
 Download NCBI taxonomy SQL database (only need to do this once!).
 ```{r}
-prepareDatabase('../data/accessionTaxa.sql')
+##prepareDatabase('../data/accessionTaxa.sql')
+```
+
+```{r}
+genbank_select <- genbank %>%
+  select(taxid, genome_ftp_path, genome_filename) %>%
+  ungroup() %>%
+  #keep only unique taxid
+  distinct(taxid, .keep_all = TRUE)
+genbank_select
+```
+
+Get taxonomy info from taxid.
+```{r}
+genbankTaxonomy <- getTaxonomy(unique(genbank$taxid), sqlFile = "../data/accessionTaxa.sql") %>%
+  data.frame(taxid = row.names(.), row.names = NULL) %>%
+  # remove spaces in taxid
+  mutate(taxid = str_trim(taxid))
+```
+
+
+Add taxonomy info to genbank df. 
+```{r}
+genbank_taxon_joined <- left_join(genbank_select, genbankTaxonomy, by = "taxid")
+genbank_taxon_joined
+```
+
+
+How many genus matches?
+```{r}
+sum(genbank_taxon_joined$genus %in% unique(mmetsp_unnested$genus))
+```
+
+
+```{r}
+one_genus <- genbank_taxon_joined %>%
+  filter(genus %in% unique(mmetsp_unnested$genus)) %>%
+  group_by(genus) %>%
+  top_n(1, wt = genus) %>%
+  ungroup()
+
+one_genus
+```
+```{r}
+sum(mmetsp_unnested$genus %in% one_genus$genus) / length(mmetsp_unnested$genus)
+
+```
+
+Family?
+```{r}
+sum(genbank_taxonomy_joined$family %in% unique(mmetsp_unnested$family))
 ```
 
