@@ -129,3 +129,7 @@ Try joining genbank genome df with taxonomy df.
 Inner join taking forever ...
 Too slow with tibbles. Try using data.table. Works, but removing duplicate taxids made dplyr joinin
 fast enough.
+
+28. March. 2021
+For each MMETSP speices, get matching genbank genome at species level, genus if no species,
+family if no genus, ...
