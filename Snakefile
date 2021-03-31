@@ -15,12 +15,9 @@ appendedIDS = glob_wildcards("data/taxIdAppendedGenomes/{appended_genomeName}.fa
 
 rule all:
   input:
-    #"data/taxIdAppendedGenomes/taxIdAppended_GCA_001652855.1_Pro_Min_D-127.v1.0_genomic.fna.gz"
-    #expand("data/taxIdAppendedGenomes/taxIdAppended_{genomeName}.fasta", genomeName = IDS.genomeName)
-    #expand("data/kraken2_add_seq/{appended_genomeName}.out", appended_genomeName = appendedIDS.appended_genomeName)
-    #expand("data/MMETSP_fastq/{sample}/{sample_name_main}-{genus}-{species}-{strain}.1.fastq", zip, sample = _sample_ids, sample_name_main = _sample_names, genus = _genus, species = _species, strain = _strain),
-    #expand("data/MMETSP_fastq/{sample}/{sample_name_main}-{genus}-{species}-{strain}.2.fastq", zip, sample = _sample_ids, sample_name_main = _sample_names, genus = _genus, species = _species, strain = _strain),
-    expand("results/done/{sample}-{sample_name_main}-{genus}-{species}-{strain}.done", zip, sample = _sample_ids, sample_name_main = _sample_names, genus = _genus, species = _species, strain = _strain)
+      expand("data/tar/{sample}/{sample_name_main}.fastq.tar", zip, sample = _sample_ids, sample_name_main = _sample_names)
+      #expand("data/MMETSP_fastq/{sample}/{sample_name_main}-{genus}-{species}-{strain}.1.fastq", zip, sample = _sample_ids, #sample_name_main = _sample_names, genus = _genus, species = _species, strain = _strain)
+    #expand("results/krakenOutputs/{sample}-{sample_name_main}-{genus}-{species}-{strain}.kraken", zip, sample = _sample_ids, #sample_name_main = _sample_names, genus = _genus, species = _species, strain = _strain)
     
 
 rule addKrakenTaxidGenome:
@@ -41,6 +38,31 @@ rule addFastaToDb:
   shell:
     "kraken2-build --add-to-library {input.appended_file} --db {input.database} && touch {output}"
     
+rule downloadMmetspTar:
+    output:
+        "data/tar/{sample}/{sample_name_main}.fastq.tar"
+    shell:
+        "iget -PT /iplant/home/shared/imicrobe/projects/104/samples/{wildcards.sample}/{wildcards.sample_name_main}.fastq.tar data/tar/{wildcards.sample}"
+        
+rule untarFastq:
+    input:
+        "data/tar/{sample}/{sample_name_main}.fastq.tar"
+    output:
+        "data/done/untar/{sample}-{sample_name_main}.done"
+    shell:
+        "mkdir -p data/MMETSP_fastq && tar xfv {input} -C data/MMETSP_fastq && touch data/done/untar/{wildcards.sample}-{wildcards.sample_name_main}.done"
+        
+rule printTest:
+    input:
+        fastq1 = "data/MMETSP_fastq/{sample}-{fullSpeciesName}.1.fastq.gz",
+        fastq2 = "data/MMETSP_fastq/{sample}-{fullSpeciesName}.2.fastq.gz"
+    output:
+        "data/done/printTest/{sample}-{fullSpeciesName}.done"
+    shell:
+        "echo {input.fastq1}-{input.fastq2}"
+        
+       
+    
 rule getMmetspFastq:
   output:
     "data/MMETSP_fastq/{sample}/{sample_name_main}-{genus}-{species}-{strain}.1.fastq",
@@ -50,10 +72,15 @@ rule getMmetspFastq:
     "iget -PT /iplant/home/shared/imicrobe/projects/104/samples/{wildcards.sample}/{wildcards.sample_name_main}-{wildcards.genus}-{wildcards.species}-{wildcards.strain}.2.fastq data/MMETSP_fastq/{wildcards.sample}"
     
 rule kraken2:
-  output:
-    "results/done/{sample}-{sample_name_main}-{genus}-{species}-{strain}.done"
-  shell:
-    "kraken2 --use-names --threads 32 --db data/mmetsp_genome_db --report results/{wildcards.sample} --paired data/MMETSP_fastq/{wildcards.sample}/{wildcards.sample_name_main}-{wildcards.genus}-{wildcards.species}-{wildcards.strain}.1.fastq data/MMETSP_fastq/{wildcards.sample}/{wildcards.sample_name_main}-{wildcards.genus}-{wildcards.species}-{wildcards.strain}.2.fastq > results/{wildcards.sample}.kraken && touch results/done/{wildcards.sample}-{wildcards.sample_name_main}-{wildcards.genus}-{wildcards.species}-{wildcards.strain}.done"
+    input:
+        fastq1 = "data/MMETSP_fastq/{sample}-{fullSpeciesName}.1.fastq.gz",
+        fastq2 = "data/MMETSP_fastq/{sample}-{fullSpeciesName}.2.fastq.gz"
+    output:
+        reportOut = "results/krakenReports/{sample}-{fullSpeciesName}",
+        krakenOut = "results/krakenOutputs/{sample}-{fullSpeciesName}.kraken",
+        done = "done/kraken/{sample}-{fullSpeciesName}.done"
+    shell:
+        "kraken2 --use-names --threads 32 --db data/mmetsp_genome_db --report {output.reportOut} --paired {input.fastq1} {input.fastq2} > {output.krakenOut} && touch {output.done}
 
     
   

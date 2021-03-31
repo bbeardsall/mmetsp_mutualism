@@ -137,6 +137,12 @@ genbank <- read_tsv('../data/assembly_summary_genbank.txt',
 ```
 
 # Join MMETSP/Genbank by taxid
+```{r}
+paste("/iplant/home/shared/imicrobe/projects/104/samples", "sample", 
+      paste("sampleid", ".fastq.tar", sep = ""), 
+      sep = "/")
+```
+
 
 Join MMETSP and Genbank data by taxon id.
 ```{r}
@@ -152,10 +158,14 @@ join_taxid <- inner_join(mmetsp_unnested, genbank, by = c('taxon_id' = 'taxid'))
   mutate(
     # add full filename and ftp path of genbank genomes
     genome_filename = paste(tail(str_split(ftp_path, '/')[[1]], 1), suffix, sep = ""),
-    genome_ftp_path = paste(ftp_path, genome_filename, sep = "/")
-  )
+    genome_ftp_path = paste(ftp_path, genome_filename, sep = "/"),
+    strain = str_replace(strain, " ", "-"),
+    new_fastq_ftp = paste("/iplant/home/shared/imicrobe/projects/104/samples", sample_id, 
+      paste(sample_name_main, ".fastq.tar", sep = ""), 
+      sep = "/")
+  ) 
   
-join_taxid
+join_taxid$new_fastq_ftp[1]
 ```
 
 
@@ -163,6 +173,8 @@ join_taxid
 
 # Write taxid joined 
 CSV of all info:
+
+
 ```{r}
 write_csv(join_taxid, '../data/mmetsp_ncbi_genome_info.csv')
 ```
@@ -218,6 +230,14 @@ genus_match <- genbank_taxon_joined %>%
   group_by(genus) %>%
   top_n(1) %>%
   ungroup()
+```
+
+```{r}
+taxid_match
+```
+
+```{r}
+genus_match
 ```
 
 Matching family, not lower.
