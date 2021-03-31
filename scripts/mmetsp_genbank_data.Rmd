@@ -137,6 +137,12 @@ genbank <- read_tsv('../data/assembly_summary_genbank.txt',
 ```
 
 # Join MMETSP/Genbank by taxid
+```{r}
+paste("/iplant/home/shared/imicrobe/projects/104/samples", "sample", 
+      paste("sampleid", ".fastq.tar", sep = ""), 
+      sep = "/")
+```
+
 
 Join MMETSP and Genbank data by taxon id.
 ```{r}
@@ -152,10 +158,14 @@ join_taxid <- inner_join(mmetsp_unnested, genbank, by = c('taxon_id' = 'taxid'))
   mutate(
     # add full filename and ftp path of genbank genomes
     genome_filename = paste(tail(str_split(ftp_path, '/')[[1]], 1), suffix, sep = ""),
-    genome_ftp_path = paste(ftp_path, genome_filename, sep = "/")
-  )
+    genome_ftp_path = paste(ftp_path, genome_filename, sep = "/"),
+    strain = str_replace(strain, " ", "-"),
+    new_fastq_ftp = paste("/iplant/home/shared/imicrobe/projects/104/samples", sample_id, 
+      paste(sample_name_main, ".fastq.tar", sep = ""), 
+      sep = "/")
+  ) 
   
-join_taxid
+join_taxid$new_fastq_ftp[1]
 ```
 
 
@@ -163,6 +173,8 @@ join_taxid
 
 # Write taxid joined 
 CSV of all info:
+
+
 ```{r}
 write_csv(join_taxid, '../data/mmetsp_ncbi_genome_info.csv')
 ```
@@ -172,15 +184,16 @@ FTP paths:
 readr::write_lines(join_taxid$genome_ftp_path, '../data/genome_ftp_paths.txt')
 ```
 
-# Filter Genbank by MMETSP class
+# Get Genbank Taxonomy info
 Download NCBI taxonomy SQL database (only need to do this once!).
 ```{r}
 ##prepareDatabase('../data/accessionTaxa.sql')
 ```
 
+Select only genome info from genbank.
 ```{r}
 genbank_select <- genbank %>%
-  select(taxid, genome_ftp_path, genome_filename) %>%
+  select(taxid, species_taxid, genome_ftp_path, infraspecific_name, infraspecific_name2, genome_filename) %>%
   ungroup() %>%
   #keep only unique taxid
   distinct(taxid, .keep_all = TRUE)
@@ -195,36 +208,83 @@ genbankTaxonomy <- getTaxonomy(unique(genbank$taxid), sqlFile = "../data/accessi
   mutate(taxid = str_trim(taxid))
 ```
 
-
 Add taxonomy info to genbank df. 
 ```{r}
 genbank_taxon_joined <- left_join(genbank_select, genbankTaxonomy, by = "taxid")
 genbank_taxon_joined
 ```
+# Match genbank and mmetsp taxonomy
 
-
-How many genus matches?
+Find matching taxid.
 ```{r}
-sum(genbank_taxon_joined$genus %in% unique(mmetsp_unnested$genus))
+taxid_match <- genbank_taxon_joined %>%
+  filter(taxid %in% mmetsp_unnested$taxon_id | species_taxid %in% mmetsp_unnested$taxon_id)
 ```
 
-
+Matching genus, not taxid.
 ```{r}
-one_genus <- genbank_taxon_joined %>%
-  filter(genus %in% unique(mmetsp_unnested$genus)) %>%
+genus_match <- genbank_taxon_joined %>%
+  drop_na(genus) %>%
+  filter(genus %in% mmetsp_unnested$genus,
+         !(taxid %in% mmetsp_unnested$taxon_id | species_taxid %in% mmetsp_unnested$taxon_id)) %>%
   group_by(genus) %>%
-  top_n(1, wt = genus) %>%
+  top_n(1) %>%
   ungroup()
-
-one_genus
-```
-```{r}
-sum(mmetsp_unnested$genus %in% one_genus$genus) / length(mmetsp_unnested$genus)
-
 ```
 
-Family?
 ```{r}
-sum(genbank_taxonomy_joined$family %in% unique(mmetsp_unnested$family))
+taxid_match
+```
+
+```{r}
+genus_match
+```
+
+Matching family, not lower.
+```{r}
+family_match <- genbank_taxon_joined %>%
+  drop_na(family) %>%
+  filter(family %in% mmetsp_unnested$family,
+         !(genus %in% mmetsp_unnested$genus),
+         !(taxid %in% mmetsp_unnested$taxon_id | species_taxid %in% mmetsp_unnested$taxon_id)) %>%
+  group_by(family) %>%
+  top_n(1)
+```
+
+Matching order, not lower.
+```{r}
+order_match <- genbank_taxon_joined %>%
+  drop_na(order) %>%
+  filter(order %in% mmetsp_unnested$order, 
+         !(family %in% mmetsp_unnested$family),
+         !(genus %in% mmetsp_unnested$genus),
+         !(taxid %in% mmetsp_unnested$taxon_id | species_taxid %in% mmetsp_unnested$taxon_id)) %>%
+  group_by(order) %>%
+  top_n(1) %>%
+  ungroup()
+```
+
+Matching class, not lower.
+```{r}
+class_match <- genbank_taxon_joined %>%
+  drop_na(class) %>%
+  filter(class %in% mmetsp_unnested$class, 
+         !(order %in% mmetsp_unnested$order), 
+         !(family %in% mmetsp_unnested$family),
+         !(genus %in% mmetsp_unnested$genus),
+         !(taxid %in% mmetsp_unnested$taxon_id | species_taxid %in% mmetsp_unnested$taxon_id)) %>%
+  group_by(class) %>%
+  top_n(1) %>%
+  ungroup()
+```
+
+Combine all filtered taxonomy to master df.
+```{r}
+genbank_mmetsp <- rbind(class_match, order_match, family_match, genus_match, taxid_match) %>%
+  arrange(species) %>%
+  relocate(infraspecific_name, .after = species) %>%
+  relocate(infraspecific_name2, .after = infraspecific_name)
+
+genbank_mmetsp
 ```
 
