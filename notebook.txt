@@ -134,29 +134,4 @@ fast enough.
 For each MMETSP speices, get matching genbank genome at species level, genus if no species,
 family if no genus, ...
 
-29. March. 2021
-Issues pasting the MMETSP species, strain, etc. together to make an FTP path.
-So try using the provided .tar ftp path to fastq files.
-
-iget -PT "/iplant/home/shared/imicrobe/projects/104/samples/MMETSP081/MMETSP0817.fastq.tar"
-iget -PT "/iplant/home/shared/imicrobe/projects/104/samples/2475/MMETSP0053.fastq.tar"
-
-mkdir -p output && tar xfv MMETSP0053.fastq.tar -C output/
-
-
-snakemake -np "data/tar/2475/MMETSP0053.fastq.tar"
-
-data/done/untar/2475-MMETSP0053.done
-data/done/printTest/2475-MMETSP0053-Prorocentrum-minimum-CCMP1329.done
-
-data/done/printTest/MMETSP0053-Prorocentrum-minimum-CCMP1329.done
-MMETSP0053-Prorocentrum-minimum-CCMP1329.1.fastq.gz
-
-
-results/krakenOutputs/MMETSP0053-Prorocentrum-minimum-CCMP1329.kraken
-
-31. March 2021
-Jupyter ssh tunnel:
-ssh -N -L 8080:localhost:8080 bio2
-
-
+results/krakenOutputs/2475-MMETSP0053-Prorocentrum-minimum-CCMP1329.kraken
