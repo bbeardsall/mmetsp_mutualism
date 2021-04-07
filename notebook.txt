@@ -139,4 +139,13 @@ results/krakenOutputs/2475-MMETSP0053-Prorocentrum-minimum-CCMP1329.kraken
 
 7. April 2021
 Good snakemake tutorial: https://old.research.jetbrains.org/files/material/5ec245b4e907c.pdf 
+also https://taylorreiter.github.io/2020-02-03-How-to-use-snakemake-checkpoints-to-extract-files-from-an-archive/
 FINALLY fixed checkpoint issue. Instead of trying to split {mmmetspName}-{fullSpeciesName}, just used {fullSpeciesName}.
+Each kraken instance uses ~ 31.2 gb with current database.
+
+257817.0 Total
+200000 available for use
+18.9% usage = 48,727.413 Mb each ~ 50000 Mb each
+Run with snakemake --cores 32 --resources mem_mb=200000
+
+Since some MMETSP have a "_2" prefix, changed file delimiter to "_-_".
