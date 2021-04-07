@@ -135,3 +135,8 @@ For each MMETSP speices, get matching genbank genome at species level, genus if 
 family if no genus, ...
 
 results/krakenOutputs/2475-MMETSP0053-Prorocentrum-minimum-CCMP1329.kraken
+
+
+7. April 2021
+Good snakemake tutorial: https://old.research.jetbrains.org/files/material/5ec245b4e907c.pdf 
+FINALLY fixed checkpoint issue. Instead of trying to split {mmmetspName}-{fullSpeciesName}, just used {fullSpeciesName}.
