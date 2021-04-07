@@ -3,3 +3,4 @@ data/
 .snakemake/
 results/
 .ipynb_checkpoints/
+output/
