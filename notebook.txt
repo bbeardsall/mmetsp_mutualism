@@ -149,3 +149,6 @@ Each kraken instance uses ~ 31.2 gb with current database.
 Run with snakemake --cores 32 --resources mem_mb=200000
 
 Since some MMETSP have a "_2" prefix, changed file delimiter to "_-_".
+
+19. April. 2020
+Reads only 50 bp long (paired).
