@@ -172,3 +172,12 @@ columns of bracken to use:
 1, 2, 7
 cat Hemiselmis-andersenii.bracken | cut -f 1,2,6 > Hemiselmis-andersenii.bracken.krona
 ktImportTaxonomy Hemiselmis-andersenii.bracken.krona
+
+Added bracken rule to snakefile.
+
+
+results/kronaGraph/1699_-_MMETSP0046_-_MMETSP0046_2-Guillardia-theta-CCMP2712.kraken.krona.html
+
+
+Krona doesn't work with bracken.
+Remove use-names flag from kraken rule.

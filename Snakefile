@@ -20,7 +20,7 @@ rule all:
     #"results/krakenOutputs/2475_MMETSP0053_Prorocentrum-minimum-CCMP1329.kraken"
     # expand("data/tar/{sample}/{sample_name_main}.fastq.tar", zip, sample = _sample_ids, sample_name_main = _sample_names)
     #expand("results/krakenOutputs/{sample_id}_{sample_name_main}_{fullSpeciesName}.kraken", zip, sample = _sample_ids, sample_name_main = _sample_names)
-    expand("results/done_bracken/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
+    expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
     #aggregate_untarFastq
 
 ### Preparing database ###
@@ -73,7 +73,7 @@ def aggregate_untarFastq(wildcards):
   # sample_name_main = wildcards.sample_name_main,
   # fullSpeciesName = fullSpeciesNames
   # )
-  bracken_filenames = expand("results/bracken/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.bracken", zip,
+  bracken_filenames = expand("results/kronaGraph/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.kraken.krona.html", zip,
   sample_id = wildcards.sample_id,
   sample_name_main = wildcards.sample_name_main,
   fullSpeciesName = fullSpeciesNames
@@ -92,7 +92,7 @@ rule kraken2:
     resources:
       mem_mb=50000
     shell:
-        "kraken2 --use-names --threads 32 --db data/mmetsp_genome_db --report {output.reportOut} --paired {input.fastq1} {input.fastq2} > {output.krakenOut}"
+        "kraken2 --threads 32 --db data/mmetsp_genome_db --report {output.reportOut} --paired {input.fastq1} {input.fastq2} > {output.krakenOut}"
 
 # Bracken to reestimate species abundance
 rule bracken:
@@ -103,8 +103,23 @@ rule bracken:
   shell:
     "bracken -d data/mmetsp_genome_db -i {input.krakenReport} -o {output.brackenOut} -r 50"
 
+rule krakenKrona:
+  input:
+    kraken = "results/krakenOutputs/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.kraken"
+  output:
+    krakenKrona = "results/krakenKrona/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.kraken.krona"
+  shell:
+    "cat {input.kraken} | cut -f 3 > {output.krakenKrona}"
+
+rule kronaGraph:
+  input:
+    krakenKrona = "results/krakenKrona/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.kraken.krona"
+  output:
+    kronaGraph = "results/kronaGraph/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.kraken.krona.html"
+  shell:
+    "ktImportTaxonomy {input.krakenKrona} -o {output.kronaGraph} -t 1"
+
 rule finished:
   input: aggregate_untarFastq
-  output: "results/done_bracken/{sample_id}_-_{sample_name_main}.done"
+  output: "results/done_krona/{sample_id}_-_{sample_name_main}.done"
   shell: "touch {output}"
-
