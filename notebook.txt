@@ -152,3 +152,23 @@ Since some MMETSP have a "_2" prefix, changed file delimiter to "_-_".
 
 19. April. 2020
 Reads only 50 bp long (paired).
+Bracken use tutorial: https://genomics.sschmeier.com/ngs-taxonomic-investigation/index.html 
+
+
+./bracken-build -d ${KRAKEN_DB} -t ${THREADS} -k ${KMER_LEN} -l ${READ_LEN} -x ${KRAKEN_INSTALLATION}
+bracken-build -d data/mmetsp_genome_db -t 32 -k 35 -l 50
+
+Built bracken database (didn't take long).
+
+20. April. 2021
+Try to classify with bracken.
+
+bracken -d data/mmetsp_genome_db -i results/krakenReports/1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.report -o results/brackenTest/Hemiselmis-andersenii.bracken -r 50
+
+Visualize with Krona.
+conda install -c bioconda krona
+
+columns of bracken to use:
+1, 2, 7
+cat Hemiselmis-andersenii.bracken | cut -f 1,2,6 > Hemiselmis-andersenii.bracken.krona
+ktImportTaxonomy Hemiselmis-andersenii.bracken.krona
