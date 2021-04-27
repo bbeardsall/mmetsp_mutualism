@@ -203,4 +203,6 @@ This works, but doesn't dust mask or add .map file.
 Krakenuniq dust settings:
 dustmasker -infmt fasta -in $fasta_file -level 20 -outfmt fasta | sed '/^>/! s/[^AGCT]/N/g' > $dustmasked_file.tmp && mv $dustmasked_file.tmp $dustmasked_file
 
-snakemake data/masked_genomes/GCA_000002455.1_ASM245v1_genomic-dustmasked.fna -n
+snakemake data/genome_maps/GCA_000002455.1_ASM245v1_genomic-dustmasked.fna.map  -n
+
+

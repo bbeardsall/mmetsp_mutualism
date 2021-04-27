@@ -3,6 +3,7 @@ import pandas as pd
 genome_data = pd.read_csv("data/mmetsp_ncbi_genome_info.csv")
 #/iplant/home/shared/imicrobe/projects/104/transcriptomes/MMETSP005/MMETSP0053.fastq.tar
 #fastq_files = genome_data['fastq_file']
+_genome_names = genome_data['genome_name'].tolist()
 
 _sample_ids = genome_data['sample_id'].tolist()
 #_sample_ids = [2475]
@@ -20,8 +21,8 @@ rule all:
     #"results/krakenOutputs/2475_MMETSP0053_Prorocentrum-minimum-CCMP1329.kraken"
     # expand("data/tar/{sample}/{sample_name_main}.fastq.tar", zip, sample = _sample_ids, sample_name_main = _sample_names)
     #expand("results/krakenOutputs/{sample_id}_{sample_name_main}_{fullSpeciesName}.kraken", zip, sample = _sample_ids, sample_name_main = _sample_names)
-    expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
-    #aggregate_untarFastq
+    #expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
+    expand("data/genome_maps/{genomeName}.fna.map", genomeName = _genome_names)
 
 ### Preparing kraken2 database ###
 
@@ -48,7 +49,7 @@ rule unzipGenome:
   input:
     "data/genomes/{genomeName}.fna.gz"
   output:
-    "data/unzipped_genomes/{genomeName}.fna"
+    temp("data/unzipped_genomes/{genomeName}.fna")
   shell:
     "gzip -dc {input} > {output}"
 
@@ -60,7 +61,14 @@ rule dustmaskGenome:
   shell:
     "dustmasker -infmt fasta -in {input} -level 20 -outfmt fasta | sed '/^>/! s/[^AGCT]/N/g' > {output}"
 
-
+rule mapGenomeSequences:
+  input:
+    masked_file = "data/masked_genomes/{genomeName}-dustmasked.fna",
+    genome_csv = "data/mmetsp_ncbi_genome_info.csv"
+  output:
+    "data/genome_maps/{genomeName}.fna.map"
+  script:
+    "scripts/map_krakenuniq_taxonomy.py"
 
 ### Downloading MMETSP and running Kraken ###   
 

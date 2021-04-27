@@ -181,7 +181,8 @@ join_taxid <- inner_join(mmetsp_unnested, genbank, by = c('taxon_id' = 'taxid'))
     strain = str_replace(strain, " ", "-"),
     new_fastq_ftp = paste("/iplant/home/shared/imicrobe/projects/104/samples", sample_id, 
       paste(sample_name_main, ".fastq.tar", sep = ""), 
-      sep = "/")
+      sep = "/"),
+    genome_name = str_split(genome_filename, ".fna.gz")[[1]][1]
   ) 
   
 join_taxid$new_fastq_ftp[1]
