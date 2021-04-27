@@ -1,6 +1,8 @@
 ---
 title: "Merge MMETSP and Genbank Data"
 output: 
+editor_options: 
+  chunk_output_type: inline
 ---
 
 # Setup
@@ -70,6 +72,21 @@ mmetsp_unnested <- mmetsp_wider %>%
   unnest()
 ```
 
+```{r}
+t(data.frame(as.list(colSums(!is.na(mmetsp_unnested))))) %>%
+  as_tibble(rownames ="variable") %>%
+  rename(count = V1) %>%
+  arrange(-count)
+
+```
+
+```{r}
+mmetsp_unnested %>%
+  drop_na(depth)
+```
+
+
+
 # Mapping
 ```{r}
 world <- ne_countries(scale = "medium", returnclass = "sf")
@@ -84,9 +101,11 @@ Map of MMETSP sampling points:
 ```{r}
 ggplot(data = world) +
     geom_sf() +
-    geom_point(data = coords_df, aes(x = longitude, y = latitude), size = 3, 
+    geom_point(data = coords_df, aes(x = longitude, y = latitude), size = 2, 
         shape = 23, fill = "red")+
-  coord_sf(xlim = c(-180, 180), ylim = c(-90, 90), expand = FALSE)
+  coord_sf(xlim = c(-180, 180), ylim = c(-90,90), expand = FALSE)
+
+ggsave("../output/mmetsp_map.png")
 ```
 
 

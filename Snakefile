@@ -23,7 +23,7 @@ rule all:
     expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
     #aggregate_untarFastq
 
-### Preparing database ###
+### Preparing kraken2 database ###
 
 rule addKrakenTaxidGenome:
   input:
@@ -42,6 +42,25 @@ rule addFastaToDb:
     "data/kraken2_add_seq/{appended_genomeName}.out"
   shell:
     "kraken2-build --add-to-library {input.appended_file} --db {input.database} && touch {output}"
+
+### Preparing krakenuniq database ###
+rule unzipGenome:
+  input:
+    "data/genomes/{genomeName}.fna.gz"
+  output:
+    "data/unzipped_genomes/{genomeName}.fna"
+  shell:
+    "gzip -dc {input} > {output}"
+
+rule dustmaskGenome:
+  input:
+    "data/unzipped_genomes/{genomeName}.fna"
+  output:
+    "data/masked_genomes/{genomeName}-dustmasked.fna"
+  shell:
+    "dustmasker -infmt fasta -in {input} -level 20 -outfmt fasta | sed '/^>/! s/[^AGCT]/N/g' > {output}"
+
+
 
 ### Downloading MMETSP and running Kraken ###   
 

@@ -181,3 +181,26 @@ results/kronaGraph/1699_-_MMETSP0046_-_MMETSP0046_2-Guillardia-theta-CCMP2712.kr
 
 Krona doesn't work with bracken.
 Remove use-names flag from kraken rule.
+
+26. April 2021
+Installed krakenuniq via conda
+
+krakenuniq-download --db krakenUniq_mmetsp_genome_db/ taxonomy
+krakenuniq-download -db krakenUniq_mmetsp_genome_db/ --threads 10 --dust refseq/bacteria refseq/archaea
+
+27. April 2021
+
+Create mapping file for krakenUniq database building.
+Style described in readme: https://github.com/fbreitwieser/krakenuniq 
+seqId   taxid   name
+
+Or? Try just adding to library using krakenuniq-build --add-to-library $FILE --db $DBNAME
+
+krakenuniq-build --add-to-library taxIdAppendedGenomes/taxIdAppended_GCA_000002455.1_ASM245v1_genomic.fasta --db krakenUniq_mmetsp_genome_db
+
+This works, but doesn't dust mask or add .map file.
+
+Krakenuniq dust settings:
+dustmasker -infmt fasta -in $fasta_file -level 20 -outfmt fasta | sed '/^>/! s/[^AGCT]/N/g' > $dustmasked_file.tmp && mv $dustmasked_file.tmp $dustmasked_file
+
+snakemake data/masked_genomes/GCA_000002455.1_ASM245v1_genomic-dustmasked.fna -n
