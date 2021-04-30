@@ -20,9 +20,9 @@ rule all:
   input:
     #"results/krakenOutputs/2475_MMETSP0053_Prorocentrum-minimum-CCMP1329.kraken"
     # expand("data/tar/{sample}/{sample_name_main}.fastq.tar", zip, sample = _sample_ids, sample_name_main = _sample_names)
-    #expand("results/krakenOutputs/{sample_id}_{sample_name_main}_{fullSpeciesName}.kraken", zip, sample = _sample_ids, sample_name_main = _sample_names)
-    #expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
-    expand("data/genome_maps/{genomeName}.fna.map", genomeName = _genome_names)
+    #expand("results/krakenReports/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.report", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
+    expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
+    #expand("data/krakenUniq_mmetsp_genome_db/library/added/{genomeName}.fna.map", genomeName = _genome_names)
 
 ### Preparing kraken2 database ###
 
@@ -57,16 +57,16 @@ rule dustmaskGenome:
   input:
     "data/unzipped_genomes/{genomeName}.fna"
   output:
-    "data/masked_genomes/{genomeName}-dustmasked.fna"
+    "data/krakenUniq_mmetsp_genome_db/library/added/{genomeName}-dustmasked.fna"
   shell:
     "dustmasker -infmt fasta -in {input} -level 20 -outfmt fasta | sed '/^>/! s/[^AGCT]/N/g' > {output}"
 
 rule mapGenomeSequences:
   input:
-    masked_file = "data/masked_genomes/{genomeName}-dustmasked.fna",
+    masked_file = "data/krakenUniq_mmetsp_genome_db/library/added/{genomeName}-dustmasked.fna",
     genome_csv = "data/mmetsp_ncbi_genome_info.csv"
   output:
-    "data/genome_maps/{genomeName}.fna.map"
+    "data/krakenUniq_mmetsp_genome_db/library/added/{genomeName}.fna.map"
   script:
     "scripts/map_krakenuniq_taxonomy.py"
 
@@ -119,7 +119,7 @@ rule kraken2:
     resources:
       mem_mb=50000
     shell:
-        "kraken2 --threads 32 --db data/mmetsp_genome_db --report {output.reportOut} --paired {input.fastq1} {input.fastq2} > {output.krakenOut}"
+        "kraken2 --threads 32 --report-minimizer-data --db data/mmetsp_genome_db --report {output.reportOut} --paired {input.fastq1} {input.fastq2} > {output.krakenOut}"
 
 # Bracken to reestimate species abundance
 rule bracken:

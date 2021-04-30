@@ -203,6 +203,77 @@ This works, but doesn't dust mask or add .map file.
 Krakenuniq dust settings:
 dustmasker -infmt fasta -in $fasta_file -level 20 -outfmt fasta | sed '/^>/! s/[^AGCT]/N/g' > $dustmasked_file.tmp && mv $dustmasked_file.tmp $dustmasked_file
 
-snakemake data/genome_maps/GCA_000002455.1_ASM245v1_genomic-dustmasked.fna.map  -n
+snakemake data/genome_maps/GCA_000002455.1_ASM245v1_genomic.fna.map  -n
+
+28. April 2021
+
+Build database after adding sequences:
+krakenuniq-build --db krakenUniq_mmetsp_genome_db --threads 32 --taxids-for-genomes --taxids-for-sequences
+Started at 11:19 AM.
+
+Found 21760 sequence files (*.{fna,fa,ffn,fasta,fsa}) in the library directo
+ry.                                                                         
+Creating k-mer set (step 1 of 6)...                                         
+Using jellyfish                                                             
+Hash size not specified, using '31181164848'                                
+K-mer set created. [1h51m33.699s]                                           
+Skipping step 2, no database reduction requested.                           
+Sorting k-mer set (step 3 of 6)...                                          
+db_sort: Getting database into memory ...db_sort: unable to mmap database.jdb: 
+Cannot allocate memory
+
+31 181 164 848
+
+215,150,037,451.2
+
+31 181 164 848
+9000M
+
+29. April. 2021
+
+Delete all database files. Try with a smaller jellyfish hash size.
+try:
+krakenuniq-build --db krakenUniq_mmetsp_genome_db --threads 32 --taxids-for-genomes --taxids-for-sequences --jellyfish-hash-size 9000M
+
+Still too big.
+Try:
+krakenuniq-build --db krakenUniq_mmetsp_genome_db --threads 32 --taxids-for-genomes --taxids-for-sequences --jellyfish-hash-size 900M
+
+still too big.
+
+krakenuniq-build --db krakenUniq_mmetsp_genome_db --threads 32 --taxids-for-genomes --taxids-for-sequences --jellyfish-hash-size 90M
+
+30. April. 2021
+Try getting reads for each taxon.
+
+eg. polarella galcialis:
+taxid = 5045
+2502_-_MMETSP1459_-_MMETSP1459-Pycnococcus-provasolii-RCC931.report
+2502_-_MMETSP1459_-_MMETSP1459-Pycnococcus-provasolii-RCC931.kraken
+
+python /mnt/D2/bbeardsall/miniconda3/envs/mmetsp_mutualism/bin/extract_kraken_reads.py -k results/krakenOutputs/2502_-_MMETSP1459_-_MMETSP1459-Pycnococcus-provasolii-RCC931.kraken -s1 data/MMETSP_fastq/2502_-_MMETSP1459/read1.fastq -s2 data/MMETSP_fastq/2502_-_MMETSP1459/read2.fastq -o results/testReads/test1.fastq -o2 results/testReads/test2.fastq -t 5045
+data/MMETSP_fastq/2502_-_MMETSP1459/MMETSP1459-Pycnococcus-provasolii-RCC931.1.fastq.gz
+
+SeqIO doesn't like the third line of the fastq having a different header than the first.
+So, remove the third line (leaving only +)
+zcat MMETSP1459-Pycnococcus-provasolii-RCC931.2.fastq.gz  | sed 's/^\+NIKITA_1003.*/+/g' > read2.fastq
+
+python /mnt/D2/bbeardsall/miniconda3/envs/mmetsp_mutualism/bin/extract_kraken_reads.py -k results/krakenOutputs/2502_-_MMETSP1459_-_MMETSP1459-Pycnococcus-provasolii-RCC931.kraken -s1 data/MMETSP_fastq/2502_-_MMETSP1459/read1.fastq -s2 data/MMETSP_fastq/2502_-_MMETSP1459/read2.fastq -o results/testReads/test1.fastq -o2 results/testReads/test2.fastq -t 5045
+
+NIKITA_1003:3:1101:1192:2207#ACTTGA
+
+Kraken2 has minimizer output!!!
+
+1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.report
 
 
+results/krakenOut/1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.kraken
+
+kraken2 --threads 32 --db data/mmetsp_genome_db --report results/krakenReports/1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.report 
+--paired --gzip-compressed data/MMETSP_fastq/1682_-_MMETSP0043/MMETSP0043-2-Hemiselmis-andersenii-CCMP644.1.fastq.gz data/MMETSP_fastq/1682_-_MMETSP0043/MMETSP0043-2-Hemiselmis-andersenii-CCMP644.2.fastq.gz 
+> results/krakenOutputs/1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.kraken
+
+Worked!
+See https://github.com/nf-core/eager/blob/master/docs/output.md
+
+duplicity = kmers / uniqueKmers

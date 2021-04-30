@@ -1,0 +1,70 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+report <- read_tsv("../results/krakenReports/1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.report",
+                   col_names = c("percent", "clade_count", "taxon_count", "kmers", "unique_kmers", "level", "taxid", "name" )) 
+report
+```
+```{r}
+report <- report %>%
+  mutate(duplicity = kmers/unique_kmers,
+         ratio_unique = unique_kmers/kmers)
+report
+```
+```{r}
+report %>%
+  ggplot(aes(x = log(clade_count)))+
+  geom_histogram(bins = 30)# +
+  #geom_density()+
+  #xlim(0, 1000)
+```
+
+```{r}
+report %>%
+  ggplot(aes(x = log(clade_count)))+
+  geom_histogram(bins = 50) +
+  xlim(0,25)
+```
+```{r}
+nrow(report)
+```
+```{r}
+
+```
+
+```{r}
+unique(report$level)
+```
+
+```{r}
+unique(report$level)
+```
+```{r}
+report %>%
+  filter(level %in% c("S", "S1", "S2"))
+```
+
+
+```{r}
+report %>%
+  filter(taxon_count > 1000,
+         duplicity > 100)
+```
+
+```{r}
+report %>%
+  ggplot(aes(x = duplicity))+
+  geom_histogram(bins = 30) +
+  #geom_density()+
+  xlim(0, 100)
+```
+
+```{r}
+report %>%
+  ggplot(aes(x = ratio_unique))+
+  geom_histogram(bins = 30)
+```
+
