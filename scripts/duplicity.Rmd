@@ -2,56 +2,147 @@
 title: "R Notebook"
 output: html_notebook
 ---
-
 ```{r}
-report <- read_tsv("../results/krakenReports/1682_-_MMETSP0043_-_MMETSP0043-2-Hemiselmis-andersenii-CCMP644.report",
-                   col_names = c("percent", "clade_count", "taxon_count", "kmers", "unique_kmers", "level", "taxid", "name" )) 
-report
+library(tidyverse)
+library(taxonomizr)
+
 ```
 ```{r}
+report_filenames <- list.files("../results/krakenReports/")
+```
+
+```{r}
+report <- NULL
+
+for(filename in report_filenames){
+  data <- read_tsv(file.path("../results/krakenReports", filename),
+                   col_names = c("percent", "clade_count", "taxon_count", "kmers", "unique_kmers", "level", "taxid", "name" ))
+  
+  data$file <- filename
+  
+  report <- bind_rows(report, data)
+  
+}
+
 report <- report %>%
   mutate(duplicity = kmers/unique_kmers,
-         ratio_unique = unique_kmers/kmers)
+         ratio_unique = unique_kmers/kmers,
+         taxid = as.character(taxid)) %>%
+  filter(clade_count > 1)
+
+taxonomyInfo <- getTaxonomy(unique(report$taxid), sqlFile = "../data/accessionTaxa.sql") %>%
+  data.frame(taxid = row.names(.), row.names = NULL) %>%
+  # remove spaces in taxid
+  mutate(taxid = str_trim(taxid))
+
+report <- left_join(report, taxonomyInfo, by = "taxid")
+
 report
+
 ```
+
+
 ```{r}
-report %>%
-  ggplot(aes(x = log(clade_count)))+
-  geom_histogram(bins = 30)# +
-  #geom_density()+
-  #xlim(0, 1000)
+length(unique(report$taxid))
+```
+
+
+```{r}
+taxonomyInfo <- getTaxonomy(unique(report$taxid), sqlFile = "../data/accessionTaxa.sql") %>%
+  data.frame(taxid = row.names(.), row.names = NULL) %>%
+  # remove spaces in taxid
+  mutate(taxid = str_trim(taxid)) 
+
+taxonomyInfo
 ```
 
 ```{r}
 report %>%
+  filter(superkingdom == "Archaea")
+```
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria") %>%
+  ggplot(aes(x = log(taxon_count)))+
+  geom_histogram(bins = 30)+
+  #geom_density()+
+  xlim(0, 10)
+```
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria") %>%
   ggplot(aes(x = log(clade_count)))+
-  geom_histogram(bins = 50) +
+  geom_histogram(bins = 30)+
+  #geom_density()+
+  xlim(0, 10)
+```
+
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria") %>%
+  ggplot(aes(x = (duplicity)))+
+  geom_histogram(bins = 45)+
+  #geom_density()+
+  xlim(0, 50)
+```
+
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria") %>%
+  ggplot(aes(x = log(unique_kmers)))+
+  geom_histogram(bins = 30) +
+  xlim(0, 10)
+```
+
+```{r}
+exp(2.5)
+```
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria") %>%
+  ggplot(aes(x = log(unique_kmers)))+
+  geom_histogram(bins = 30) +
+  xlim(0, 10)
+```
+
+```{r}
+report %>%
+  ggplot(aes(x = log(unique_kmers)))+
+  geom_histogram(bins = 50)# +
   xlim(0,25)
 ```
 ```{r}
 nrow(report)
 ```
-```{r}
 
-```
 
 ```{r}
 unique(report$level)
 ```
 
 ```{r}
-unique(report$level)
-```
-```{r}
 report %>%
-  filter(level %in% c("S", "S1", "S2"))
+  filter(clade_count > 200,
+         taxon_count > 10,
+         unique_kmers > 10,
+         duplicity < 70
+         )
 ```
 
-
 ```{r}
 report %>%
-  filter(taxon_count > 1000,
-         duplicity > 100)
+  filter(superkingdom %in% c("Archaea", "Bacteria"),
+         clade_count > 500,
+         taxon_count > 500,
+         unique_kmers > 10,
+         duplicity < 10,
+         grepl("^(S|G|O).*", level)
+         #level %in% c("G","G1", "G2", "S", "S1", "S2", "S3")
+         )
 ```
 
 ```{r}

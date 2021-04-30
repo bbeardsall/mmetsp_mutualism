@@ -21,7 +21,7 @@ rule all:
     #"results/krakenOutputs/2475_MMETSP0053_Prorocentrum-minimum-CCMP1329.kraken"
     # expand("data/tar/{sample}/{sample_name_main}.fastq.tar", zip, sample = _sample_ids, sample_name_main = _sample_names)
     #expand("results/krakenReports/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.report", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
-    expand("results/done_krona/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
+    expand("results/done_kraken/{sample_id}_-_{sample_name_main}.done", zip, sample_id = _sample_ids, sample_name_main = _sample_names)
     #expand("data/krakenUniq_mmetsp_genome_db/library/added/{genomeName}.fna.map", genomeName = _genome_names)
 
 ### Preparing kraken2 database ###
@@ -100,13 +100,11 @@ def aggregate_untarFastq(wildcards):
   # sample_name_main = wildcards.sample_name_main,
   # fullSpeciesName = fullSpeciesNames
   # )
-  bracken_filenames = expand("results/kronaGraph/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.kraken.krona.html", zip,
+  return expand("results/krakenReports/{sample_id}_-_{sample_name_main}_-_{fullSpeciesName}.report", zip,
   sample_id = wildcards.sample_id,
   sample_name_main = wildcards.sample_name_main,
   fullSpeciesName = fullSpeciesNames
   )
-
-  return bracken_filenames
 
 # run Kraken 2 to classify
 rule kraken2:
@@ -148,5 +146,5 @@ rule kronaGraph:
 
 rule finished:
   input: aggregate_untarFastq
-  output: "results/done_krona/{sample_id}_-_{sample_name_main}.done"
+  output: "results/done_kraken/{sample_id}_-_{sample_name_main}.done"
   shell: "touch {output}"

@@ -277,3 +277,5 @@ Worked!
 See https://github.com/nf-core/eager/blob/master/docs/output.md
 
 duplicity = kmers / uniqueKmers
+
+rerun all kraken jobs with --report-minimizer-data
