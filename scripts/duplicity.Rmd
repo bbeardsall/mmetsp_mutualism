@@ -7,6 +7,14 @@ library(tidyverse)
 library(taxonomizr)
 
 ```
+
+```{r}
+genome_data <- read_csv("../data/mmetsp_ncbi_genome_info.csv") %>%
+  mutate_at("sample_id", as.character)
+genome_data
+```
+
+
 ```{r}
 report_filenames <- list.files("../results/krakenReports/")
 ```
@@ -28,6 +36,7 @@ report <- report %>%
   mutate(duplicity = kmers/unique_kmers,
          ratio_unique = unique_kmers/kmers,
          taxid = as.character(taxid)) %>%
+  separate(file, c("sample_id", "sample_name_main", "fullSpeciesName"), sep = "_-_", remove = F) %>%
   filter(clade_count > 1)
 
 taxonomyInfo <- getTaxonomy(unique(report$taxid), sqlFile = "../data/accessionTaxa.sql") %>%
@@ -35,15 +44,25 @@ taxonomyInfo <- getTaxonomy(unique(report$taxid), sqlFile = "../data/accessionTa
   # remove spaces in taxid
   mutate(taxid = str_trim(taxid))
 
-report <- left_join(report, taxonomyInfo, by = "taxid")
+report <- report %>%
+  left_join(., taxonomyInfo, by = "taxid") %>%
+  left_join(., genome_data[, c("sample_id", "taxon_id")], by = "sample_id") %>%
+  left_join(., genome_data[, c("sample_id", "species_taxid")], by = "sample_id") %>%
+  rename(target_taxid = taxon_id,
+         target_species_taxid = species_taxid) %>%
+  mutate(is_target_species = (taxid == target_taxid | taxid == target_species_taxid))
 
 report
-
 ```
 
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria")
+```
 
 ```{r}
-length(unique(report$taxid))
+nrow(report)
+sum(report$is_target_species)
 ```
 
 
@@ -55,18 +74,69 @@ taxonomyInfo <- getTaxonomy(unique(report$taxid), sqlFile = "../data/accessionTa
 
 taxonomyInfo
 ```
+```{r}
+write_csv(report, "../data/duplicity_report.csv")
+```
 
 ```{r}
 report %>%
-  filter(superkingdom == "Archaea")
+  filter(superkingdom == "Bacteria")
 ```
 ```{r}
 report %>%
-  filter(superkingdom == "Bacteria") %>%
-  ggplot(aes(x = log(taxon_count)))+
+  filter(superkingdom == "Bacteria",
+         grepl("^(S|G).*", level)) %>%
+  ggplot(aes(x = taxon_count/unique_kmers))+
   geom_histogram(bins = 30)+
   #geom_density()+
   xlim(0, 10)
+```
+
+```{r}
+report %>%
+  filter(
+         is_target_species) %>%
+  ggplot(aes(x = log(taxon_count)))+
+  geom_histogram(bins = 30)#+
+  #geom_density()+
+  #xlim(0, 10)
+```
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria",
+         grepl("^(S|G).*", level),
+         taxon_count != 0) %>%
+  ggplot(aes(x =log10(taxon_count)))+
+  geom_histogram(bins = 30)+
+  #geom_density()+
+  xlim(0, 10)+
+  ylim(0,5000)
+```
+
+
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria",
+         taxon_count/unique_kmers != 0) %>%
+  ggplot(aes(x = log(taxon_count/unique_kmers)))+
+  geom_histogram(bins = 30)+
+  #geom_density()+
+  xlim(0, 10)
+```
+
+
+```{r}
+report %>%
+  filter(superkingdom == "Bacteria",
+         taxon_count/unique_kmers != 0) %>%
+  ggplot(aes(x = (taxon_count/unique_kmers)))+
+  geom_histogram(bins = 30)+
+  #geom_density()+
+  xlim(0, 100)+
+  ylim(0, 5000)
+
 ```
 
 ```{r}
@@ -77,7 +147,50 @@ report %>%
   #geom_density()+
   xlim(0, 10)
 ```
+```{r}
+report %>%
+  filter(!is_target_species,
+         duplicity > 0) %>%
+  ggplot(aes(x = (duplicity)))+
+  geom_histogram()+
+  scale_x_log10()
+```
 
+```{r}
+
+report %>%
+  #filter(is_target_species) %>%
+  ggplot(aes(x = duplicity))+
+  facet_wrap(~ifelse(is_target_species,"Target Species", "Other Species"), scales = "free_y")+
+  geom_histogram()+
+  scale_x_continuous(labels = scales::number_format(accuracy = 1),
+                     trans = "log10",
+                     limits = c(1, 1000),
+                     n.breaks = 8)+
+  theme_bw()
+```
+
+```{r}
+report %>%
+  #filter(is_target_species) %>%
+  ggplot(aes(x = taxon_count))+
+  facet_wrap(~ifelse(is_target_species,"Target Species", "Other Species"), scales = "free_y", "free_x")+
+  geom_histogram()+
+  scale_x_continuous(labels = scales::number_format(accuracy = 1),
+                     trans = "log10")+
+  theme_bw()
+```
+```{r}
+report %>%
+  filter(!is_target_species) %>%
+  ggplot(aes(x = taxon_count))+
+  geom_histogram()+
+    scale_x_continuous(labels = scales::number_format(accuracy = 1),
+                     #trans = "log10",
+                     n.breaks = 10,
+                     limits = c(1, 500))+
+  theme_bw()
+```
 
 ```{r}
 report %>%
@@ -136,11 +249,11 @@ report %>%
 ```{r}
 report %>%
   filter(superkingdom %in% c("Archaea", "Bacteria"),
-         clade_count > 500,
+         clade_count > 1000,
          taxon_count > 500,
          unique_kmers > 10,
          duplicity < 10,
-         grepl("^(S|G|O).*", level)
+         grepl("^(S|G).*", level)
          #level %in% c("G","G1", "G2", "S", "S1", "S2", "S3")
          )
 ```

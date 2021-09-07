@@ -279,3 +279,9 @@ See https://github.com/nf-core/eager/blob/master/docs/output.md
 duplicity = kmers / uniqueKmers
 
 rerun all kraken jobs with --report-minimizer-data
+
+3. May. 2021
+
+Want to produce graphs for Andrew meeting.
+Histograms of duplicity, taxon counts, clade counts
+Separate target organism & other
